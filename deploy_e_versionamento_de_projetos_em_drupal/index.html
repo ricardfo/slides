@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Prez</title>
+
+    <meta name="description" content="-- DESCRIPTION HERE --">
+    <meta name="author" content="thiago">
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/league.css" id="theme">
+
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="css/highlight/styles/zenburn.css" id="highlight-theme">
+
+    <!-- Printing and PDF exports -->
+    <script>
+      var link = document.createElement( 'link' );
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+      document.getElementsByTagName( 'head' )[0].appendChild( link );
+    </script>
+
+    <link rel="stylesheet" href="css/custom.css">
+
+  </head>
+
+  <body>
+
+    <div class="reveal">
+      <div class="slides"><section id="intro" class="slide" data-has-notes="false">
+<h2>Deploy e versionamento de projetos em Drupal</h2><p><br>
+Ricardo Fontoura <br>
+Thiago Gomes Veríssimo <br>
+<br></p>
+<h3>Universidade de São Paulo</h3>
+</section>
+
+<section id="objetivos" class="slide" data-has-notes="false">
+<h2>Objetivos:</h2><ul>
+<li>Cadastro de resenhas de filmes (movie reviews)</li>
+<li>Drupal como backend/framework</li>
+<li>Ambientes de desenvolvimento e produção (workflow)</li>
+<li>Paradigma do Dump <em>versus</em> desenvolvedor Drupal</li>
+</ul>
+<h2>O que veremos?</h2><ul>
+<li>comandos básicos do linux</li>
+<li>versionamento com git</li>
+<li>drupal: content type, views e features</li>
+<li>automação com drush e composer</li>
+</ul>
+</section>
+
+<section id="infos" class="slide" data-has-notes="false">
+<p>Ambiente para realização das atividades:</p>
+<pre><code><span class="hljs-selector-tag">ssh</span> <span class="hljs-selector-tag">USUARIO</span>@<span class="hljs-keyword">143</span>.<span class="hljs-keyword">107</span>.<span class="hljs-keyword">8</span>.<span class="hljs-keyword">48</span>
+</code></pre><p>Configuração do git:</p>
+<pre><code>git config --global user<span class="hljs-selector-class">.email</span> <span class="hljs-string">"MAIL@example.com"</span>
+git config --global user<span class="hljs-selector-class">.name</span> <span class="hljs-string">"SEU NOME"</span>
+</code></pre>
+</section>
+
+<section id="chapter-infra" class="chapter">
+<section id="infra-pacotes" class="slide" data-has-notes="false">
+<h2>Preparação da infraestrutura:</h2><p>Instalação das dependências em ambiente (debian 8):</p>
+<pre><code>apt-get install vim php5 php5-gd php5-mysql git drush mysql-server
+</code></pre><p>Baixar composer:</p>
+<pre><code>wget <span class="hljs-string">https:</span><span class="hljs-comment">//getcomposer.org/installer</span>
+php installer
+mv composer.phar <span class="hljs-regexp">/usr/</span>local<span class="hljs-regexp">/bin/</span>composer
+</code></pre><p>Criar um usuário no grupo www-data:</p>
+<pre><code>useradd -m <span class="hljs-_">-d</span> /var/www/html/thais <span class="hljs-_">-s</span> $(<span class="hljs-built_in">which</span> bash) -G www-data  thais
+<span class="hljs-built_in">echo</span> thais:123 | chpasswd
+</code></pre>
+</section>
+
+<section id="infra-apache" class="slide" data-has-notes="false">
+<h2>Configurações do Apache</h2><p>Inserir as seguintes diretivas no ambiente VirtualHost:</p>
+<pre><code><span class="hljs-comment"># /etc/apache2/sites-enabled/000-default.conf</span>
+<span class="hljs-attribute"><span class="hljs-nomarkup">RewriteEngine</span></span> <span class="hljs-literal">On</span>
+<span class="hljs-attribute">RewriteOptions</span> inherit
+<span class="hljs-section">&lt;Directory /var/www/html&gt;</span>
+  <span class="hljs-attribute"><span class="hljs-nomarkup">Options</span></span> <span class="hljs-literal">All</span>
+  <span class="hljs-attribute">Allowoverride</span> <span class="hljs-literal">All</span>
+<span class="hljs-section">&lt;/Directory&gt;</span>
+</code></pre><p>Habilita módulo rewrite e restartar o apache:</p>
+<pre><code>a2enmod <span class="hljs-built_in">rewrite</span>
+service apache2 restart
+</code></pre>
+</section>
+
+<section id="infra-mysql" class="slide" data-has-notes="false">
+<h2>Banco de dados MySQL</h2><p>Banco de dados desenvolvimento: </p>
+<pre><code><span class="hljs-keyword">create</span> <span class="hljs-keyword">database</span> thais_dev;
+<span class="hljs-keyword">grant</span> all <span class="hljs-keyword">privileges</span> <span class="hljs-keyword">on</span> thais_dev.* <span class="hljs-keyword">to</span> thais_dev@<span class="hljs-string">'%'</span>  <span class="hljs-keyword">identified</span> <span class="hljs-keyword">by</span> <span class="hljs-string">'thais_dev'</span>;
+</code></pre><p>Banco de dados produção: </p>
+<pre><code><span class="hljs-keyword">create</span> <span class="hljs-keyword">database</span> thais_prod;
+<span class="hljs-keyword">grant</span> all <span class="hljs-keyword">privileges</span> <span class="hljs-keyword">on</span> thais_prod.* <span class="hljs-keyword">to</span> thais_prod@<span class="hljs-string">'%'</span> <span class="hljs-keyword">identified</span> <span class="hljs-keyword">by</span> <span class="hljs-string">'thais_prod'</span>;
+</code></pre>
+</section>
+</section>
+
+<section id="chapter-dev" class="chapter">
+<section id="dev-drupal" class="slide" data-has-notes="false">
+<h2>Baixando e instalando Drupal</h2><p>Baixar Drupal e módulo features usando o composer:</p>
+<pre><code><span class="hljs-string">composer </span><span class="hljs-built_in">create-project</span> <span class="hljs-string">drupal-composer/</span><span class="hljs-string">drupal-project:8.</span><span class="hljs-string">x-dev </span><span class="hljs-string">desenvolvimento </span><span class="hljs-built_in">--stability</span> <span class="hljs-string">dev </span><span class="hljs-built_in">--no-interaction</span>
+<span class="hljs-string">cd </span>~/<span class="hljs-string">desenvolvimento
+</span><span class="hljs-string">composer </span><span class="hljs-string">require </span><span class="hljs-string">drupal/</span><span class="hljs-string">features</span>
+</code></pre><p>Ignorar arquivos de configuração:</p>
+<pre><code><span class="hljs-built_in">cd</span> ~/desenvolvimento
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"web/sites/default/settings.php"</span> &gt;&gt; .gitignore
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"web/sites/default/services.yml"</span> &gt;&gt; .gitignore
+</code></pre><p>Instalar drupal e habilitar módulo features:</p>
+<pre><code>u=<span class="hljs-string">'fatecX'</span>
+<span class="hljs-built_in">cd</span> ~/desenvolvimento/web/
+../vendor/bin/drush si --db-url=mysql://<span class="hljs-variable">${u}</span>_dev:<span class="hljs-string">"<span class="hljs-variable">${u}</span>_dev"</span>@127.0.0.1/<span class="hljs-variable">${u}</span>_dev --account-name=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --account-pass=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --site-name=<span class="hljs-string">"Desenvolvimento"</span> -y
+../vendor/bin/drush en features_ui -y
+</code></pre>
+</section>
+
+<section id="dev-content_type" class="slide" data-has-notes="false">
+<h2>Tipo de conteúdo: movie</h2><p>Permissão na pasta files:</p>
+<pre><code>chmod -R o+w ~<span class="hljs-regexp">/desenvolvimento/</span>web<span class="hljs-regexp">/sites/</span><span class="hljs-keyword">default</span><span class="hljs-regexp">/files</span>
+</code></pre><ol>
+<li>Structure -&gt; content type -&gt; add content type -&gt; movie</li>
+<li>delete body</li>
+<li><p>Add fields:</p>
+<ul>
+<li>director: text plain</li>
+<li>genre: List Text (melodrama, cult, fictional science)</li>
+<li>photo: image</li>
+<li>review: text formatted long</li>
+</ul>
+</li>
+<li><p>manage display: photo format: 220x220</p>
+</li>
+</ol>
+</section>
+
+<section id="dev-views" class="slide" data-has-notes="false">
+<h2>View</h2><ul>
+<li>Structure -&gt; views -&gt; add view -&gt; movies</li>
+<li>show content of type movie</li>
+<li>create page</li>
+<li>display format: table</li>
+<li>add fields: director, genre, photo (Image style: 220x220), review</li>
+<li>menu entry</li>
+<li>filter: title as exposed</li>
+</ul>
+</section>
+
+<section id="dev-feature" class="slide" data-has-notes="false">
+<h2>Feature movie_reviews</h2><pre><code>mkdir -p ~<span class="hljs-regexp">/desenvolvimento/web</span><span class="hljs-regexp">/modules/custom</span><span class="hljs-regexp">/movie_reviews
+chmod -R o+w ~/desenvolvimento</span><span class="hljs-regexp">/web/modules</span><span class="hljs-regexp">/custom/movie</span>_reviews
+</code></pre><p>Criar feature:</p>
+<ol>
+<li><em>configuration -&gt; features -&gt; create new feature</em></li>
+<li>movie_reviews, versão 8.x-1.1 e path modules/custom/movie_reviews</li>
+<li>componetes: <em>content type: movie</em> e <em>views: movie</em>.</li>
+</ol>
+<p>Commit das mudanças:</p>
+<pre><code>cd ~/desenvolvimento
+git init
+git <span class="hljs-keyword">add</span><span class="bash"> --all
+</span>git commit -m <span class="hljs-string">'meu projeto drupal no git'</span>
+</code></pre>
+</section>
+</section>
+
+<section id="chapter-prod" class="chapter">
+<section id="prod-build" class="slide" data-has-notes="false">
+<h2>Subindo ambiente de produção:</h2><p>Clone:</p>
+<pre><code>cd ~
+git <span class="hljs-keyword">clone</span> <span class="hljs-title">desenvolvimento</span> producao
+</code></pre><p>Provisionamento:   </p>
+<pre><code>u=<span class="hljs-string">'fatecX'</span>
+<span class="hljs-built_in">cd</span> producao
+composer install
+<span class="hljs-built_in">cd</span> web
+../vendor/bin/drush si --db-url=mysql://<span class="hljs-variable">${u}</span>_prod:<span class="hljs-string">"<span class="hljs-variable">${u}</span>_prod"</span>@127.0.0.1/<span class="hljs-variable">${u}</span>_prod --account-name=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --account-pass=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --site-name=<span class="hljs-string">"produção"</span> -y
+</code></pre><p>Ativar a feature movie_reviews:</p>
+<pre><code>../vendor/bin/drush <span class="hljs-keyword">en</span> features -<span class="hljs-built_in">y</span>
+../vendor/bin/drush <span class="hljs-keyword">en</span> movie_reviews -<span class="hljs-built_in">y</span>
+</code></pre>
+</section>
+</section>
+
+<section id="chapter-new_feature" class="chapter">
+<section id="new_feature-genre" class="slide" data-has-notes="false">
+<h2>Alterando o projeto</h2><p>No ambiente de desenvolvimento, adicinar um novo gênero de filme: <em>romance</em> e 
+re-exportar outra versão da feature. Commit na mudança:</p>
+<pre><code>cd ~/desenvolvimento
+git status
+git <span class="hljs-keyword">add</span><span class="bash"> --all
+</span>git commit -m <span class="hljs-string">'adicinando novo gênero'</span>
+</code></pre><p>Aplicar mudança no ambiente de produção:</p>
+<pre><code><span class="hljs-symbol">cd</span> ~/producao
+<span class="hljs-symbol">git</span> pull origin master
+<span class="hljs-symbol">cd</span> web
+<span class="hljs-symbol">..</span>/vendor/<span class="hljs-keyword">bin/drush </span>fd <span class="hljs-keyword">movie_reviews
+</span><span class="hljs-symbol">..</span>/vendor/<span class="hljs-keyword">bin/drush </span>features-<span class="hljs-meta">import</span>  <span class="hljs-keyword">movie_reviews </span>-y
+</code></pre>
+</section>
+</section>
+
+<section id="fim" class="slide" data-has-notes="false">
+<p><br><br></p>
+<h1>Obrigado!</h1>
+</section></div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+
+    <script>
+    // Full list of configuration options available at:
+    // https://github.com/hakimel/reveal.js#configuration
+    Reveal.initialize({
+      controls: true,
+      progress: true,
+      history: true,
+      center: true,
+
+      transition: Reveal.getQueryHash().transition || 'slide', // none/fade/slide/convex/concave/zoom
+
+      // Optional reveal.js plugins
+      dependencies: [
+        //{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+        //{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+        //{ src: 'plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+        { src: 'plugin/zoom-js/zoom.js', async: true },
+        { src: 'plugin/notes/notes.js', async: true }
+      ]
+    });
+    </script>
+
+    <script src="js/dynamic-theme.js"></script><script src="js/custom.js"></script>
+
+  </body>
+</html>
