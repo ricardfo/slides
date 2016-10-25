@@ -119,9 +119,9 @@ service apache2 restart
 <span class="hljs-built_in">echo</span> <span class="hljs-string">"web/sites/default/settings.php"</span> &gt;&gt; .gitignore
 <span class="hljs-built_in">echo</span> <span class="hljs-string">"web/sites/default/services.yml"</span> &gt;&gt; .gitignore
 </code></pre><p>Instalar drupal e habilitar módulo features:</p>
-<pre><code>u=<span class="hljs-string">'fatecX'</span>
+<pre><code>u=<span class="hljs-string">'fatec666_dev'</span>
 <span class="hljs-built_in">cd</span> ~/desenvolvimento/web/
-../vendor/bin/drush si --db-url=mysql://<span class="hljs-variable">${u}</span>_dev:<span class="hljs-string">"<span class="hljs-variable">${u}</span>_dev"</span>@127.0.0.1/<span class="hljs-variable">${u}</span>_dev --account-name=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --account-pass=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --site-name=<span class="hljs-string">"Desenvolvimento"</span> -y
+../vendor/bin/drush si --db-url=mysql://<span class="hljs-variable">$u</span>:<span class="hljs-variable">$u</span>@127.0.0.1/<span class="hljs-variable">$u</span> --account-name=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --account-pass=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --site-name=<span class="hljs-string">"Desenvolvimento"</span> -y
 ../vendor/bin/drush en features_ui -y
 </code></pre>
 </section>
@@ -181,11 +181,11 @@ git <span class="hljs-keyword">add</span><span class="bash"> --all
 <pre><code>cd ~
 git <span class="hljs-keyword">clone</span> <span class="hljs-title">desenvolvimento</span> producao
 </code></pre><p>Provisionamento:   </p>
-<pre><code>u=<span class="hljs-string">'fatecX'</span>
+<pre><code>u=<span class="hljs-string">'fatec666_prod'</span>
 <span class="hljs-built_in">cd</span> producao
 composer install
 <span class="hljs-built_in">cd</span> web
-../vendor/bin/drush si --db-url=mysql://<span class="hljs-variable">${u}</span>_prod:<span class="hljs-string">"<span class="hljs-variable">${u}</span>_prod"</span>@127.0.0.1/<span class="hljs-variable">${u}</span>_prod --account-name=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --account-pass=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --site-name=<span class="hljs-string">"produção"</span> -y
+../vendor/bin/drush si --db-url=mysql://<span class="hljs-variable">$u</span>:<span class="hljs-variable">$u</span>@127.0.0.1/<span class="hljs-variable">$u</span> --account-name=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --account-pass=<span class="hljs-string">"<span class="hljs-variable">${u}</span>"</span> --site-name=<span class="hljs-string">"produção"</span> -y
 </code></pre><p>Ativar a feature movie_reviews:</p>
 <pre><code>../vendor/bin/drush <span class="hljs-keyword">en</span> features -<span class="hljs-built_in">y</span>
 ../vendor/bin/drush <span class="hljs-keyword">en</span> movie_reviews -<span class="hljs-built_in">y</span>
