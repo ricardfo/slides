@@ -1,0 +1,13 @@
+Passos
+ 1)É necessário a aplicação/consumer possuir 3 parâmetros:  
+   -consumer_key
+   -consumer_secret 
+   -página de callback 
+
+ 2)A aplicação solicita ao 'server provider' um request token, e este devolve o request_token, e o request_token_secret_key
+
+ 3)Vamos usar o request_token para gerar o autorization link.
+
+ 4)depois da autenticação do usuário, nos é retornado: access_token e o access_token_secret_key 
+ 5)Aplicação dever guardar no DB o par access_token/access_token_secret_key, para futuras requisições ao provider, pois esses valores não mudam.
+ 6)Falta verificar qual token usar para o consumer verificar se o usuário está logado no provider; 
